@@ -1,5 +1,5 @@
 body {
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
 
   background-color:#FAF8EF;
   .board {
@@ -26,10 +26,12 @@ body {
       -webkit-transform: scale(0.5);
       opacity: 0;
 
+      z-index: 1;
+
       &.visible {
         -webkit-transform: scale(1);
         opacity: 1;
-        transition: all .25s;
+        transition: -webkit-transform .2s, top .1s, left .1s;
       }
     }
   }

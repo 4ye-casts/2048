@@ -1,5 +1,5 @@
 body {
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
   background-color: #FAF8EF; }
   body .board {
     background-color: #BBADA0;
@@ -18,11 +18,12 @@ body {
       color: #776E65;
       font-size: 55px;
       -webkit-transform: scale(0.5);
-      opacity: 0; }
+      opacity: 0;
+      z-index: 1; }
       body .board .tile.visible {
         -webkit-transform: scale(1);
         opacity: 1;
-        transition: all .2s; }
+        transition: -webkit-transform .2s, top .1s, left .1s; }
   body .new-game {
     background-color: #8F7A66;
     color: white;
