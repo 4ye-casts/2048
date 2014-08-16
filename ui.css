@@ -24,6 +24,42 @@ body {
         -webkit-transform: scale(1);
         opacity: 1;
         transition: -webkit-transform .2s, top .1s, left .1s; }
+      body .board .tile.num-2 {
+        background-color: #eee4da; }
+      body .board .tile.num-4 {
+        background-color: #ede0c8; }
+      body .board .tile.num-8 {
+        color: #f9f6f2;
+        background-color: #f2b179; }
+      body .board .tile.num-16 {
+        color: #f9f6f2;
+        background-color: #f59563; }
+      body .board .tile.num-32 {
+        color: #f9f6f2;
+        background-color: #f67c5f; }
+      body .board .tile.num-64 {
+        color: #f9f6f2;
+        background-color: #f65e3b; }
+      body .board .tile.num-128 {
+        color: #f9f6f2;
+        background-color: #edcf72;
+        font-size: 45px; }
+      body .board .tile.num-256 {
+        color: #f9f6f2;
+        background-color: #edcc61;
+        font-size: 45px; }
+      body .board .tile.num-512 {
+        color: #f9f6f2;
+        background-color: #edc850;
+        font-size: 45px; }
+      body .board .tile.num-1024 {
+        color: #f9f6f2;
+        background-color: #edc53f;
+        font-size: 35px; }
+      body .board .tile.num-2048 {
+        color: #f9f6f2;
+        background-color: #edc22e;
+        font-size: 35px; }
   body .new-game {
     background-color: #8F7A66;
     color: white;

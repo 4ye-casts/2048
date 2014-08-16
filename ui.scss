@@ -33,6 +33,18 @@ body {
         opacity: 1;
         transition: -webkit-transform .2s, top .1s, left .1s;
       }
+
+      &.num-2 {background-color: #eee4da;}
+      &.num-4 {background-color: #ede0c8;}
+      &.num-8 {color: #f9f6f2; background-color: #f2b179;}
+      &.num-16 {color: #f9f6f2; background-color: #f59563;}
+      &.num-32 {color: #f9f6f2; background-color: #f67c5f;}
+      &.num-64 {color: #f9f6f2; background-color: #f65e3b;}
+      &.num-128 {color: #f9f6f2; background-color: #edcf72; font-size: 45px;}
+      &.num-256 {color: #f9f6f2; background-color: #edcc61; font-size: 45px;}
+      &.num-512 {color: #f9f6f2; background-color: #edc850; font-size: 45px;}
+      &.num-1024 {color: #f9f6f2; background-color: #edc53f; font-size: 35px;}
+      &.num-2048 {color: #f9f6f2; background-color: #edc22e; font-size: 35px;}
     }
   }
   .new-game {

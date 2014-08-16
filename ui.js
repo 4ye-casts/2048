@@ -7,9 +7,36 @@
       this.size = 4;
       this.width = 100;
       this.padding = 15;
+      this.init_data();
       this.init_dom();
       this.init_key_enent();
     }
+
+    Board.prototype.each_cell = function(func) {
+      var col, row, _i, _ref, _results;
+      _results = [];
+      for (row = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; row = 0 <= _ref ? ++_i : --_i) {
+        _results.push((function() {
+          var _j, _ref1, _results1;
+          _results1 = [];
+          for (col = _j = 0, _ref1 = this.size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; col = 0 <= _ref1 ? ++_j : --_j) {
+            _results1.push(func(row, col));
+          }
+          return _results1;
+        }).call(this));
+      }
+      return _results;
+    };
+
+    Board.prototype.cell_pos = function(i) {
+      return this.padding + i * (this.padding + this.width);
+    };
+
+    Board.prototype.init_data = function() {
+      return this.data = this.each_cell(function() {
+        return null;
+      });
+    };
 
     Board.prototype.init_dom = function() {
       this._init_board_dom();
@@ -17,37 +44,25 @@
     };
 
     Board.prototype._init_board_dom = function() {
-      var $board, $cell, board_width, col, i, row, _i, _j, _ref, _ref1, _results;
+      var $board, board_width;
       board_width = this.size * this.width + (this.size + 1) * this.padding;
       this.$board = $board = jQuery('<div>').addClass('board').css({
         'width': board_width,
         'height': board_width
       }).appendTo(document.body);
-      this.cells = [];
-      for (i = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-        this.cells.push([]);
-      }
-      _results = [];
-      for (row = _j = 0, _ref1 = this.size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; row = 0 <= _ref1 ? ++_j : --_j) {
-        _results.push((function() {
-          var _k, _ref2, _results1;
-          _results1 = [];
-          for (col = _k = 0, _ref2 = this.size; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; col = 0 <= _ref2 ? ++_k : --_k) {
-            $cell = jQuery('<div>').addClass('cell').css({
-              'width': this.width,
-              'height': this.width,
-              'top': this.padding + row * (this.padding + this.width),
-              'left': this.padding + col * (this.padding + this.width)
-            }).attr({
-              'data-row': row,
-              'data-col': col
-            }).appendTo($board);
-            _results1.push(this.cells[row][col] = $cell);
-          }
-          return _results1;
-        }).call(this));
-      }
-      return _results;
+      return this.each_cell((function(_this) {
+        return function(row, col) {
+          return jQuery('<div>').addClass('cell').css({
+            'width': _this.width,
+            'height': _this.width,
+            'top': _this.cell_pos(row),
+            'left': _this.cell_pos(col)
+          }).attr({
+            'data-row': row,
+            'data-col': col
+          }).appendTo($board);
+        };
+      })(this));
     };
 
     Board.prototype._init_new_game_button = function() {
@@ -60,81 +75,41 @@
     };
 
     Board.prototype.start_new_game = function() {
-      var i, _i, _results;
       this.clear();
-      _results = [];
-      for (i = _i = 0; _i <= 1; i = ++_i) {
-        _results.push(this.generate_tile());
-      }
-      return _results;
+      this.generate_tile();
+      return this.generate_tile();
     };
 
     Board.prototype.clear = function() {
-      var $cell, arr, i, j, _i, _len, _ref, _results;
-      this.data = (function() {
-        var _i, _ref, _results;
-        _results = [];
-        for (i = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-          _results.push((function() {
-            var _j, _ref1, _results1;
-            _results1 = [];
-            for (j = _j = 0, _ref1 = this.size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
-              _results1.push(null);
-            }
-            return _results1;
-          }).call(this));
-        }
-        return _results;
-      }).call(this);
       this.$board.find('.tile').remove();
-      _ref = this.cells;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        arr = _ref[_i];
-        _results.push((function() {
-          var _j, _len1, _results1;
-          _results1 = [];
-          for (_j = 0, _len1 = arr.length; _j < _len1; _j++) {
-            $cell = arr[_j];
-            _results1.push($cell.removeClass('filled'));
-          }
-          return _results1;
-        })());
-      }
-      return _results;
+      return this.init_data();
     };
 
     Board.prototype.generate_tile = function() {
-      var $cell, col, empty_cells, rand, row;
+      var col, empty_cells, rand, row, _ref;
       empty_cells = this.empty_cells();
       rand = ~~(Math.random() * empty_cells.length);
-      $cell = empty_cells[rand];
-      $cell.addClass('filled');
-      row = $cell.data('row');
-      col = $cell.data('col');
+      _ref = empty_cells[rand], row = _ref[0], col = _ref[1];
       return this.data[row][col] = new Tile(this, row, col);
     };
 
     Board.prototype.empty_cells = function() {
-      var $cell, arr, re, _i, _j, _len, _len1, _ref;
+      var re;
       re = [];
-      _ref = this.cells;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        arr = _ref[_i];
-        for (_j = 0, _len1 = arr.length; _j < _len1; _j++) {
-          $cell = arr[_j];
-          if (!$cell.hasClass('filled')) {
-            re.push($cell);
+      this.each_cell((function(_this) {
+        return function(row, col) {
+          if (_this.data[row][col] === null) {
+            return re.push([row, col]);
           }
-        }
-      }
+        };
+      })(this));
       return re;
     };
 
     Board.prototype.init_key_enent = function() {
       return jQuery(document).on('keydown', (function(_this) {
         return function(evt) {
-          var direction;
+          var direction, moved;
           evt.preventDefault();
           direction = (function() {
             switch (evt.keyCode) {
@@ -149,14 +124,17 @@
             }
           })();
           if (direction) {
-            return _this.move(direction);
+            moved = _this.move(direction);
+          }
+          if (moved) {
+            return _this.generate_tile();
           }
         };
       })(this));
     };
 
     Board.prototype.move = function(direction) {
-      var arr, arrs, dir, i, j, merge, move, tile, _arr, _dir, _i, _j, _k, _len, _ref, _ref1, _results;
+      var arr, arrs, dir, i, merge, move, moved, tile, _arr, _dir, _i, _j, _len, _ref;
       dir = {
         left: [0, -1],
         right: [0, 1],
@@ -164,89 +142,38 @@
         down: [1, 0]
       };
       _dir = dir[direction];
-      if (direction === 'left') {
-        arrs = (function() {
-          var _i, _ref, _results;
-          _results = [];
-          for (i = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-            _results.push((function() {
-              var _j, _ref1, _results1;
-              _results1 = [];
-              for (j = _j = 0, _ref1 = this.size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
-                _results1.push(tile = this.data[i][j]);
-              }
-              return _results1;
-            }).call(this));
-          }
-          return _results;
-        }).call(this);
-      }
-      if (direction === 'right') {
-        arrs = (function() {
-          var _i, _ref, _results;
-          _results = [];
-          for (i = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-            _results.push((function() {
-              var _j, _ref1, _results1;
-              _results1 = [];
-              for (j = _j = _ref1 = this.size - 1; _ref1 <= 0 ? _j <= 0 : _j >= 0; j = _ref1 <= 0 ? ++_j : --_j) {
-                _results1.push(tile = this.data[i][j]);
-              }
-              return _results1;
-            }).call(this));
-          }
-          return _results;
-        }).call(this);
-      }
-      if (direction === 'up') {
-        arrs = (function() {
-          var _i, _ref, _results;
-          _results = [];
-          for (i = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-            _results.push((function() {
-              var _j, _ref1, _results1;
-              _results1 = [];
-              for (j = _j = 0, _ref1 = this.size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
-                _results1.push(tile = this.data[j][i]);
-              }
-              return _results1;
-            }).call(this));
-          }
-          return _results;
-        }).call(this);
-      }
-      if (direction === 'down') {
-        arrs = (function() {
-          var _i, _ref, _results;
-          _results = [];
-          for (i = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-            _results.push((function() {
-              var _j, _ref1, _results1;
-              _results1 = [];
-              for (j = _j = _ref1 = this.size - 1; _ref1 <= 0 ? _j <= 0 : _j >= 0; j = _ref1 <= 0 ? ++_j : --_j) {
-                _results1.push(tile = this.data[j][i]);
-              }
-              return _results1;
-            }).call(this));
-          }
-          return _results;
-        }).call(this);
-      }
-      this.merge_stack = (function() {
-        var _i, _ref, _results;
-        _results = [];
-        for (j = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; j = 0 <= _ref ? ++_i : --_i) {
-          _results.push((function() {
-            var _j, _ref1, _results1;
-            _results1 = [];
-            for (i = _j = 0, _ref1 = this.size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
-              _results1.push([]);
-            }
-            return _results1;
-          }).call(this));
+      arrs = (function() {
+        switch (direction) {
+          case 'left':
+            return this.each_cell((function(_this) {
+              return function(row, col) {
+                return _this.data[row][col];
+              };
+            })(this));
+          case 'right':
+            return this.each_cell((function(_this) {
+              return function(row, col) {
+                return _this.data[row][_this.size - 1 - col];
+              };
+            })(this));
+          case 'up':
+            return this.each_cell((function(_this) {
+              return function(row, col) {
+                return _this.data[col][row];
+              };
+            })(this));
+          case 'down':
+            return this.each_cell((function(_this) {
+              return function(row, col) {
+                return _this.data[_this.size - 1 - col][row];
+              };
+            })(this));
         }
-        return _results;
       }).call(this);
+      this.merge_stack = this.each_cell(function() {
+        return [];
+      });
+      moved = false;
       for (_i = 0, _len = arrs.length; _i < _len; _i++) {
         arr = arrs[_i];
         _arr = (function() {
@@ -269,33 +196,28 @@
           if (tile) {
             tile.move(_dir[0] * move, _dir[1] * move);
           }
+          if (move > 0) {
+            moved = true;
+          }
         }
       }
-      _results = [];
-      for (i = _k = 0, _ref1 = this.size; 0 <= _ref1 ? _k < _ref1 : _k > _ref1; i = 0 <= _ref1 ? ++_k : --_k) {
-        _results.push((function() {
-          var _l, _ref2, _results1;
-          _results1 = [];
-          for (j = _l = 0, _ref2 = this.size; 0 <= _ref2 ? _l < _ref2 : _l > _ref2; j = 0 <= _ref2 ? ++_l : --_l) {
-            merge = this.merge_stack[i][j];
-            if (merge.length === 0) {
-              this.cells[i][j].removeClass('filled');
-            }
-            if (merge.length === 1) {
-              this.cells[i][j].addClass('filled');
-            }
-            if (merge.length === 2) {
-              this.cells[i][j].removeClass('filled');
+      this.each_cell((function(_this) {
+        return function(i, j) {
+          merge = _this.merge_stack[i][j];
+          switch (merge.length) {
+            case 0:
+              return _this.data[i][j] = null;
+            case 1:
+              return _this.data[i][j] = merge[0];
+            case 2:
               merge[0].remove();
-              _results1.push(merge[1].up());
-            } else {
-              _results1.push(void 0);
-            }
+              merge[1].up();
+              return _this.data[i][j] = merge[1];
           }
-          return _results1;
-        }).call(this));
-      }
-      return _results;
+        };
+      })(this));
+      console.log(moved);
+      return moved;
     };
 
     Board.prototype.merge = function(arr) {
@@ -358,14 +280,13 @@
     }
 
     Tile.prototype.init_dom = function() {
-      var $tile, padding, width;
+      var $tile, width;
       width = this.board.width;
-      padding = this.board.padding;
       $tile = jQuery('<div>').addClass("tile num-" + this.number).html(this.number).css({
         'width': width,
         'height': width,
-        'top': padding + this.row * (padding + width),
-        'left': padding + this.col * (padding + width),
+        'top': this.board.cell_pos(this.row),
+        'left': this.board.cell_pos(this.col),
         'line-height': "" + width + "px"
       }).appendTo(this.board.$board);
       setTimeout(function() {
@@ -375,16 +296,15 @@
     };
 
     Tile.prototype.move = function(row, col) {
-      var $cell, padding, width;
+      var padding, width;
       width = this.board.width;
       padding = this.board.padding;
-      this.$tile.css({
-        top: "+=" + ((width + padding) * row),
-        left: "+=" + ((width + padding) * col)
-      });
-      $cell = jQuery(this.board.cells).filter("[data-row=" + row + "]").filter("[data-col=" + col + "]");
       this.row = this.row + row;
       this.col = this.col + col;
+      this.$tile.css({
+        top: padding + this.row * (padding + width),
+        left: padding + this.col * (padding + width)
+      });
       return this.board.merge_stack[this.row][this.col].push(this);
     };
 

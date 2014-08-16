@@ -4,8 +4,20 @@ class Board
     @width = 100
     @padding = 15
 
+    @init_data()
     @init_dom()
     @init_key_enent()
+
+  each_cell: (func)->
+    for row in [0...@size]
+      for col in [0...@size]
+        func(row, col)
+
+  cell_pos: (i)->
+    @padding + i * (@padding + @width)
+
+  init_data: ->
+    @data = @each_cell -> null
 
   init_dom: ->
     @_init_board_dom()
@@ -20,24 +32,18 @@ class Board
         'height': board_width
       .appendTo document.body
 
-    @cells = []
-    for i in [0...@size]
-      @cells.push []
-
-    for row in [0...@size]
-      for col in [0...@size]
-        $cell = jQuery('<div>')
-          .addClass('cell')
-          .css
-            'width': @width
-            'height': @width
-            'top': @padding + row * (@padding + @width)
-            'left': @padding + col * (@padding + @width)
-          .attr
-            'data-row': row
-            'data-col': col
-          .appendTo $board
-        @cells[row][col] = $cell
+    @each_cell (row, col)=>
+      jQuery('<div>')
+        .addClass('cell')
+        .css
+          'width':  @width
+          'height': @width
+          'top':    @cell_pos(row)
+          'left':   @cell_pos(col)
+        .attr
+          'data-row': row
+          'data-col': col
+        .appendTo $board
 
   _init_new_game_button: ->
     $new_game_button = jQuery('<div>')
@@ -49,33 +55,25 @@ class Board
 
   start_new_game: ->
     @clear()
-    @generate_tile() for i in [0..1]
+    @generate_tile()
+    @generate_tile()
 
   clear: ->
-    @data = ((null for j in [0...@size]) for i in [0...@size])
     @$board.find('.tile').remove()
-
-    for arr in @cells
-      for $cell in arr
-        $cell.removeClass 'filled'
-
+    @init_data()
 
   generate_tile: ->
     empty_cells = @empty_cells()
     rand = ~~(Math.random() * empty_cells.length)
-    $cell = empty_cells[rand]
-    $cell.addClass 'filled'
-    row = $cell.data('row')
-    col = $cell.data('col')
-
+    [row, col] = empty_cells[rand]
+    
     @data[row][col] = new Tile(@, row, col)
 
   empty_cells: ->
     re = []
-    for arr in @cells
-      for $cell in arr
-        if !$cell.hasClass('filled')
-          re.push $cell
+    @each_cell (row, col)=>
+      if @data[row][col] is null
+        re.push [row, col]
     re
 
   init_key_enent: ->
@@ -86,7 +84,9 @@ class Board
         when 40 then 'down'   # ↓
         when 37 then 'left'   # ←
         when 39 then 'right'  # →
-      @move(direction) if direction
+      moved = @move(direction) if direction
+      if moved
+        @generate_tile()
 
   move: (direction)->
     dir =
@@ -97,32 +97,19 @@ class Board
 
     _dir = dir[direction]
 
-    if direction is 'left'
-      arrs = 
-        for i in [0...@size]
-          for j in [0...@size]
-            tile = @data[i][j]
+    arrs = switch direction
+      when 'left'
+        @each_cell (row, col)=> @data[row][col]
+      when 'right'
+        @each_cell (row, col)=> @data[row][@size - 1 - col]
+      when 'up'
+        @each_cell (row, col)=> @data[col][row]
+      when 'down'
+        @each_cell (row, col)=> @data[@size - 1 - col][row]
 
-    if direction is 'right'
-      arrs = 
-        for i in [0...@size]
-          for j in [(@size - 1)..0]
-            tile = @data[i][j]
+    @merge_stack = @each_cell -> []
 
-    if direction is 'up'
-      arrs = 
-        for i in [0...@size]
-          for j in [0...@size]
-            tile = @data[j][i]
-
-    if direction is 'down'
-      arrs = 
-        for i in [0...@size]
-          for j in [(@size - 1)..0]
-            tile = @data[j][i]
-
-    @merge_stack = (([] for i in [0...@size]) for j in [0...@size])
-
+    moved = false
     for arr in arrs
       _arr = for tile in arr
         if tile then tile.number else null
@@ -132,19 +119,22 @@ class Board
         tile = arr[i]
         move = merge[i]
         tile.move(_dir[0] * move, _dir[1] * move) if tile
+        moved = true if move > 0
 
-    for i in [0...@size]
-      for j in [0...@size]
-        merge = @merge_stack[i][j]
-        if merge.length is 0
-          @cells[i][j].removeClass('filled')
-        if merge.length is 1
-          @cells[i][j].addClass('filled')
-        if merge.length is 2
-          @cells[i][j].removeClass('filled')
+    @each_cell (i, j)=>
+      merge = @merge_stack[i][j]
+      switch merge.length
+        when 0
+          @data[i][j] = null
+        when 1
+          @data[i][j] = merge[0]
+        when 2
           merge[0].remove()
           merge[1].up()
+          @data[i][j] = merge[1]
 
+    console.log moved
+    moved
 
   merge: (arr)->
     re = []
@@ -195,7 +185,6 @@ class Tile
 
   init_dom: ->
     width = @board.width
-    padding = @board.padding
 
     $tile = jQuery '<div>'
       .addClass "tile num-#{@number}"
@@ -203,8 +192,8 @@ class Tile
       .css
         'width': width
         'height': width
-        'top': padding + @row * (padding + width)
-        'left': padding + @col * (padding + width)
+        'top': @board.cell_pos(@row)
+        'left': @board.cell_pos(@col)
         'line-height': "#{width}px"
       .appendTo @board.$board
 
@@ -218,16 +207,12 @@ class Tile
     width = @board.width
     padding = @board.padding
 
-    @$tile.css
-      top: "+=#{(width + padding) * row}"
-      left: "+=#{(width + padding) * col}"
-
-    $cell = jQuery(@board.cells)
-      .filter("[data-row=#{row}]")
-      .filter("[data-col=#{col}]")
-
     @row = @row + row
     @col = @col + col
+
+    @$tile.css
+      top: padding + @row * (padding + width)
+      left: padding + @col * (padding + width)
 
     @board.merge_stack[@row][@col].push @
 
@@ -248,15 +233,3 @@ class Tile
 jQuery ->
   board = new Board()
   board.start_new_game()
-
-  # console.log board.merge [null, null, null, null]
-
-  # console.log board.merge [null, null, null, 2]
-  # console.log board.merge [null, null, 2, null]
-  # console.log board.merge [null, 2, null, null]
-  # console.log board.merge [2, null, null, null]
-
-  # console.log board.merge [null, 4, 2, null, null, 2, 4]
-  # console.log board.merge [null, 2, 2, null, 2, 2, 4]
-
-  # console.log board.merge [2, 2, 4, 4, 8, 8, 2, 4]
