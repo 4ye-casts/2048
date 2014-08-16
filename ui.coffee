@@ -89,14 +89,6 @@ class Board
         @generate_tile()
 
   move: (direction)->
-    dir =
-      left:   [ 0 , -1]
-      right:  [ 0 ,  1]
-      up:     [-1 ,  0]
-      down:   [ 1 ,  0]
-
-    _dir = dir[direction]
-
     arrs = switch direction
       when 'left'
         @each_cell (row, col)=> @data[row][col]
@@ -109,78 +101,73 @@ class Board
 
     @merge_stack = @each_cell -> []
 
-    moved = false
     for arr in arrs
-      _arr = for tile in arr
-        if tile then tile.number else null
-      
-      merge = @merge _arr
-      for i in [0...@size]
-        tile = arr[i]
-        move = merge[i]
-        tile.move(_dir[0] * move, _dir[1] * move) if tile
-        moved = true if move > 0
+      @_count_step arr
 
-    @each_cell (i, j)=>
-      merge = @merge_stack[i][j]
+    moved = false
+    @each_cell (row, col)=>
+      tile = @data[row][col]
+      if tile
+        step = tile.step
+        tile.move direction
+        moved = true if step
+
+    @each_cell (row, col)=>
+      merge = @merge_stack[row][col]
       switch merge.length
         when 0
-          @data[i][j] = null
+          @data[row][col] = null
         when 1
-          @data[i][j] = merge[0]
+          @data[row][col] = merge[0]
         when 2
           merge[0].remove()
           merge[1].up()
-          @data[i][j] = merge[1]
+          @data[row][col] = merge[1]
 
-    console.log moved
-    moved
+    return moved
 
-  merge: (arr)->
-    re = []
-    stack = []
-    last_number = null
-    
-    for number in arr
+  _count_step: (arr)->
+    # 分组
 
-      if number is null
-        stack.push number
+    groups = []
+    temp = []
+    last_tile = null
+
+    for tile in arr
+
+      if tile is null
+        temp.push tile
         continue
 
-      if last_number is null
-        stack.push number
-        last_number = number
+      if last_tile is null
+        temp.push tile
+        last_tile = tile
         continue
 
-      if number == last_number
-        stack.push number
-        re.push stack
-        stack = []
-        last_number = null
+      if tile.number == last_tile.number
+        temp.push tile
+        groups.push temp
+        temp = []
+        last_tile = null
         continue
 
-      re.push stack
-      stack = [number]
-      last_number = number
+      groups.push temp
+      temp = [tile]
+      last_tile = tile
 
-    re.push stack if stack.length > 0
+    groups.push temp if temp.length
 
-    rre = []
-    c = 0
-    for stack in re
-      for move in [0...stack.length]
-        if stack[move] is null
-          rre.push null
-        else
-          rre.push move + c
-      c += stack.length - 1
-
-    rre
-
+    # 合并
+    delta = 0
+    for group in groups
+      for step in [0...group.length]
+        tile = group[step]
+        tile.step = delta + step if tile
+      delta += group.length - 1
 
 class Tile
-  constructor: (@board, @row, @col)->
-    @number = 2
+  constructor: (@board, @row, @col, number)->
+    @number = number || 2
     @init_dom()
 
   init_dom: ->
@@ -203,16 +190,21 @@ class Tile
 
     @$tile = $tile
 
-  move: (row, col)->
-    width = @board.width
-    padding = @board.padding
+  move: (direction)->
+    dir =
+      left:   [ 0 , -1]
+      right:  [ 0 ,  1]
+      up:     [-1 ,  0]
+      down:   [ 1 ,  0]
 
-    @row = @row + row
-    @col = @col + col
+    _dir = dir[direction]
+
+    @row = @row + @step * _dir[0]
+    @col = @col + @step * _dir[1]
 
     @$tile.css
-      top: padding + @row * (padding + width)
-      left: padding + @col * (padding + width)
+      top: @board.cell_pos(@row)
+      left: @board.cell_pos(@col)
 
     @board.merge_stack[@row][@col].push @
 
