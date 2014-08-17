@@ -88,29 +88,31 @@ class Board
       if moved
         @generate_tile()
 
-  move: (direction)->
-    arrs = switch direction
+  _get_grouped_data: (direction)->
+    switch direction
       when 'left'
-        @each_cell (row, col)=> @data[row][col]
+        @each_cell (row, col)=> @_get_number_of row, col
       when 'right'
-        @each_cell (row, col)=> @data[row][@size - 1 - col]
+        @each_cell (row, col)=> @_get_number_of row, @size - 1 - col
       when 'up'
-        @each_cell (row, col)=> @data[col][row]
+        @each_cell (row, col)=> @_get_number_of col, row
       when 'down'
-        @each_cell (row, col)=> @data[@size - 1 - col][row]
+        @each_cell (row, col)=> @_get_number_of @size - 1 - col, row
 
-    @merge_stack = @each_cell -> []
+  _get_number_of: (row, col)->
+    @data[row][col]
 
-    for arr in arrs
+  move: (direction)->
+    for arr in @_get_grouped_data(direction)
       @_count_step arr
 
+    @merge_stack = @each_cell -> []
     moved = false
     @each_cell (row, col)=>
       tile = @data[row][col]
       if tile
-        step = tile.step
+        moved = true if tile.next_move_step
         tile.move direction
-        moved = true if step
 
     @each_cell (row, col)=>
       merge = @merge_stack[row][col]
@@ -126,43 +128,46 @@ class Board
 
     return moved
 
-  _count_step: (arr)->
-    # 分组
-
+  # 分组
+  __split_group: (arr)->
     groups = []
-    temp = []
+    tmp = []
     last_tile = null
 
     for tile in arr
 
       if tile is null
-        temp.push tile
+        tmp.push null
         continue
 
       if last_tile is null
-        temp.push tile
+        tmp.push tile
         last_tile = tile
         continue
 
       if tile.number == last_tile.number
-        temp.push tile
-        groups.push temp
-        temp = []
+        tmp.push tile
+        groups.push tmp
+        tmp = []
         last_tile = null
         continue
 
-      groups.push temp
-      temp = [tile]
+      groups.push tmp
+      tmp = [tile]
       last_tile = tile
 
-    groups.push temp if temp.length
+    groups.push tmp if tmp.length
+    groups
 
-    # 合并
+  _count_step: (arr)->
+    groups = @__split_group(arr)
+    # console.log groups
+
     delta = 0
     for group in groups
-      for step in [0...group.length]
-        tile = group[step]
-        tile.step = delta + step if tile
+      for idx in [0...group.length]
+        tile = group[idx]
+        tile.next_move_step = delta + idx if tile
       delta += group.length - 1
 
 class Tile
@@ -199,8 +204,8 @@ class Tile
 
     _dir = dir[direction]
 
-    @row = @row + @step * _dir[0]
-    @col = @col + @step * _dir[1]
+    @row = @row + @next_move_step * _dir[0]
+    @col = @col + @next_move_step * _dir[1]
 
     @$tile.css
       top: @board.cell_pos(@row)
